@@ -55,7 +55,7 @@ There can be any number of SPAs, APIs and CLIs. Add them with the add-app skill.
 | Task | What it does |
 |---|---|
 | `mise run setup` | Install deps and git hooks, and create `.env` from `.env.example` |
-| `mise run up` | **Whole local stack** (human only): docker infra, then migrations, then api, worker, web and landing in one terminal with `[task]`-prefixed logs. Ctrl+C stops the apps. |
+| `mise run up` | **Whole local stack** (human only): docker infra, then migrations, then api, worker, web and landing in one terminal with `[task]`-prefixed logs, plus a summary of every app and service with its port and status once they listen. Ctrl+C stops the apps. |
 | `mise run down` | Stops the docker services and frees every app port. Data volumes are **kept**. |
 | `mise run infra:up` / `infra:down` / `infra:reset` | Only the docker services. `infra:reset` is the **only** command that deletes local data. |
 | `mise run dev:api` / `dev:worker` / `dev:web` / `dev:landing` / `dev:cli` | Single app (human only) |

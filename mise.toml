@@ -37,8 +37,13 @@ description = "Start infra (docker) + migrations + every app with prefixed logs;
 run = [
   "docker compose up -d --wait",
   "mise run db:migrate",
-  "mise run --output prefix --jobs 4 dev:api ::: dev:worker ::: dev:web ::: dev:landing",
+  "mise run --output prefix --jobs 5 dev:api ::: dev:worker ::: dev:web ::: dev:landing ::: up:summary",
 ]
+
+[tasks."up:summary"]
+description = "Print what `mise run up` started and on which ports (waits until apps listen)"
+hide = true
+run = "scripts/up-summary.sh"
 
 [tasks.down]
 description = "Stop docker services and free every app port (data volumes are kept)"

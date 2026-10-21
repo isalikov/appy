@@ -15,7 +15,8 @@ The repo is a monorepo wired together with mise, lefthook and GitHub Actions. It
 mise trust && mise install   # toolchain pinned in mise.toml
 mise run setup               # deps, git hooks, .env from .env.example
 
-mise run up                  # docker infra + migrations + api, worker, web, landing (logs in this terminal)
+mise run up                  # docker infra + migrations + api, worker, web, landing (logs in this terminal),
+                             # then a summary of what runs on which port
                              # Ctrl+C stops the apps
 mise run down                # stop docker and free every port; DB data is kept
 
