@@ -1,0 +1,21 @@
+[package]
+name = "appy-cli"
+version = "0.1.0"
+description = "Appy command-line interface"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "appy"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+crossterm.workspace = true
+ratatui.workspace = true
+
+[lints]
+workspace = true

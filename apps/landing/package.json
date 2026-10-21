@@ -1,0 +1,33 @@
+{
+  "name": "@appy/landing",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite-ssg build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@appy/config": "workspace:*",
+    "@appy/ui": "workspace:*",
+    "@unhead/vue": "^2.1.2",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.147",
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "@vue/test-utils": "^2.5.1",
+    "jsdom": "^30.1.3",
+    "typescript": "~6.0.3",
+    "unocss": "^66.11.0",
+    "vite": "^8.3.5",
+    "vite-ssg": "^28.3.0",
+    "vitest": "^5.0.5",
+    "vue-tsc": "^3.3.13"
+  }
+}

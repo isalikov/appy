@@ -1,0 +1,107 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Appy API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Service health",
+        "description": "Pings every backing service. Returns 503 when any of them is unavailable.",
+        "operationId": "health_health",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CheckResult": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/CheckStatus"
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms",
+            "description": "Probe round-trip time in milliseconds."
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "latency_ms"
+        ],
+        "title": "CheckResult"
+      },
+      "CheckStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "error"
+        ],
+        "title": "CheckStatus"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/CheckStatus"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "checks": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CheckResult"
+            },
+            "type": "object",
+            "title": "Checks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version",
+          "checks"
+        ],
+        "title": "HealthResponse"
+      }
+    }
+  }
+}

@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python (ruff, mypy, pytest)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: appy
+          POSTGRES_PASSWORD: appy
+          POSTGRES_DB: appy_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U appy -d appy_test"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      mongo:
+        image: mongo:8
+        env:
+          MONGO_INITDB_ROOT_USERNAME: appy
+          MONGO_INITDB_ROOT_PASSWORD: appy
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\").ok'"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: test
+      PUBLIC_LANDING_URL: http://localhost:5174
+      PUBLIC_WEB_URL: http://localhost:5173
+      PUBLIC_API_URL: http://localhost:8000
+      API_POSTGRES_DSN: postgresql+asyncpg://appy:appy@localhost:5432/appy_test
+      API_MONGO_DSN: mongodb://appy:appy@localhost:27017/?authSource=admin
+      API_MONGO_DB: appy_test
+      API_REDIS_DSN: redis://localhost:6379/0
+      API_TASKS_REDIS_DSN: redis://localhost:6379/1
+      API_TEST_POSTGRES_DSN: postgresql+asyncpg://appy:appy@localhost:5432/appy_test
+      API_TEST_MONGO_DB: appy_test
+      API_TEST_REDIS_DSN: redis://localhost:6379/15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: python uv
+      - run: uv sync --all-packages --locked
+      - run: uv run ruff format --check .
+      - run: uv run ruff check --output-format github .
+      - run: uv run mypy
+      - name: Migrations apply cleanly
+        working-directory: apps/api
+        run: uv run alembic upgrade head
+      - run: uv run pytest --cov --cov-report=term-missing
+
+  frontend:
+    name: Frontend (eslint, vue-tsc, vitest, build, e2e)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: node pnpm
+      # Ports and PUBLIC_* URLs for Vite, Vitest and Playwright.
+      - run: cp .env.example .env
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm --filter @appy/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @appy/web test:e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
+
+  rust:
+    name: Rust (rustfmt, clippy, test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: rust
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked

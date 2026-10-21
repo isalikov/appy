@@ -1,0 +1,60 @@
+name: CLI release
+
+# Tag x.y.z -> GitHub Release with `appy` binaries for macOS and Linux.
+on:
+  push:
+    tags: ['*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {target: aarch64-apple-darwin, os: macos-latest}
+          - {target: x86_64-apple-darwin, os: macos-latest}
+          - {target: x86_64-unknown-linux-musl, os: ubuntu-latest}
+          - {target: aarch64-unknown-linux-musl, os: ubuntu-24.04-arm}
+    env:
+      BIN: appy
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        with:
+          install_args: rust
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - run: rustup target add ${{ matrix.target }}
+      - run: cargo build --release --locked -p appy-cli --target ${{ matrix.target }}
+      - name: Package
+        run: |
+          name="${BIN}-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          mkdir -p dist
+          tar -C "target/${{ matrix.target }}/release" -czf "dist/${name}.tar.gz" "${BIN}"
+          (cd dist && shasum -a 256 "${name}.tar.gz" > "${name}.tar.gz.sha256")
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ matrix.target }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: cli-*
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v3
+        with:
+          files: dist/*
+          generate_release_notes: true

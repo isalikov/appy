@@ -1,0 +1,137 @@
+# uv workspace root (virtual: it is not a package itself).
+# Shared Python tooling config lives here so every API follows the same rules.
+
+[tool.uv.workspace]
+members = [ "apps/api" ]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+src = [
+  "apps/*/src",
+  "apps/*/tests"
+]
+extend-exclude = [
+  ".claude",
+  "**/node_modules",
+  "target"
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.28.1",
+  "mypy>=2.4.0",
+  "pytest>=9.1.1",
+  "pytest-asyncio>=1.4.0",
+  "pytest-cov>=7.0.0",
+  "ruff>=0.17.1",
+  "taskiq[reload]>=0.13.0", # `mise run dev:worker` uses --reload
+]
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "W",
+  "F",
+  "I",
+  "N",
+  "UP",
+  "B",
+  "A",
+  "C4",
+  "DTZ",
+  "T10",
+  "T20",
+  "ISC",
+  "PIE",
+  "PT",
+  "RET",
+  "SIM",
+  "TID",
+  "ARG",
+  "PTH",
+  "ERA",
+  "PL",
+  "TRY",
+  "PERF",
+  "FURB",
+  "RUF",
+  "ASYNC",
+  "S",
+  "BLE",
+  "FBT",
+  "FAST",
+  "LOG",
+  "G",
+]
+ignore = [
+  "PLR0913", # FastAPI dependencies legitimately take many arguments
+  "TRY003", # explicit messages in exceptions are fine
+]
+# TC (type-checking-only imports) is deliberately off: FastAPI and pydantic
+# resolve annotations at runtime.
+
+[tool.ruff.lint.per-file-ignores]
+"apps/*/tests/**" = [
+  "S101",
+  "PLR2004",
+  "ARG001",
+  "FBT001"
+]
+"apps/*/migrations/**" = [ "ERA001" ]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unreachable = true
+enable_error_code = [
+  "ignore-without-code",
+  "redundant-expr",
+  "truthy-bool",
+  "possibly-undefined"
+]
+plugins = [ "pydantic.mypy" ]
+files = [
+  "apps/api/src",
+  "apps/api/tests",
+  "apps/api/migrations/env.py"
+]
+mypy_path = [ "apps/api/src" ]
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+  "asyncpg.*",
+  "pgvector.*",
+  "taskiq_redis.*"
+]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+testpaths = [ "apps/api/tests" ]
+addopts = [
+  "--import-mode=importlib",
+  "--strict-markers",
+  "--strict-config",
+  "-ra"
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+markers = [ "integration: needs real postgres/mongo/redis (`mise run infra:up`)" ]
+filterwarnings = [ "error" ]
+
+[tool.coverage.run]
+source = [ "apps/api/src" ]
+branch = true

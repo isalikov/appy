@@ -1,0 +1,58 @@
+# Local infrastructure only. Applications run on the host via `mise run dev:*`.
+# Values come from .env (see .env.example).
+
+name: appy
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-appy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-appy}
+      POSTGRES_DB: ${POSTGRES_DB:-appy}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-appy}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-appy}
+    ports:
+      - '${MONGO_PORT:-27017}:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: [CMD, mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: [redis-server, --appendonly, yes]
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:
+  mongo-data:
+  redis-data:

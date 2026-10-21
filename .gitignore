@@ -1,0 +1,40 @@
+# env
+.env
+.env.*
+!.env.example
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+
+# node
+node_modules/
+dist/
+.vite/
+.vite-ssg-temp/
+coverage/
+*.tsbuildinfo
+playwright-report/
+test-results/
+blob-report/
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# rust
+target/
+
+# claude
+.claude/settings.local.json
+.playwright-mcp/

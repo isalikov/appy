@@ -1,0 +1,176 @@
+# Toolchain and task runner for the whole monorepo.
+# `mise install` provisions every tool; `mise tasks` lists every task.
+
+[tools]
+node = "24.22.0"
+pnpm = "10.34.7"
+python = "3.14.8"
+uv = "0.13.3"
+rust = { version = "1.99.1", components = "rustfmt,clippy" }
+lefthook = "2.2.2"
+
+[env]
+# Local development reads configuration from the root .env (never committed).
+_.file = { path = ".env", redact = false }
+
+_.python.venv = { path = ".venv", create = false }
+
+[settings]
+experimental = true
+
+# ---------------------------------------------------------------- bootstrap
+
+[tasks.setup]
+description = "Install toolchain, dependencies and git hooks"
+run = [
+  "pnpm install",
+  "uv sync --all-packages",
+  "cargo fetch",
+  "lefthook install",
+  "test -f .env || cp .env.example .env",
+]
+
+# ---------------------------------------------------------------- local stack
+
+[tasks.up]
+description = "Start infra (docker) + migrations + every app with prefixed logs; Ctrl+C stops the apps"
+run = [
+  "docker compose up -d --wait",
+  "mise run db:migrate",
+  "mise run --output prefix --jobs 4 dev:api ::: dev:worker ::: dev:web ::: dev:landing",
+]
+
+[tasks.down]
+description = "Stop docker services and free every app port (data volumes are kept)"
+run = "scripts/down.sh"
+
+# ----------------------------------------------------------- infrastructure
+
+[tasks."infra:up"]
+description = "Start local dependencies (postgres, mongo, redis)"
+run = "docker compose up -d --wait"
+
+[tasks."infra:down"]
+description = "Stop local dependencies (data is kept in volumes)"
+run = "docker compose down"
+
+[tasks."infra:reset"]
+description = "Stop local dependencies and DELETE their data volumes"
+run = "docker compose down -v"
+
+# ---------------------------------------------------------------- dev (humans only)
+
+[tasks."dev:api"]
+description = "Run the API on localhost:$API_PORT with auto-reload"
+dir = "apps/api"
+run = "uv run uvicorn --factory appy_api.main:create_app --reload --host localhost --port ${API_PORT:?set API_PORT in .env}"
+
+[tasks."dev:worker"]
+description = "Run the API background task worker (taskiq) with auto-reload"
+dir = "apps/api"
+run = "uv run taskiq worker appy_api.tasks.broker:broker appy_api.tasks.jobs --reload"
+
+[tasks."dev:web"]
+description = "Run the web SPA on localhost:$WEB_PORT"
+run = "pnpm --filter @appy/web dev"
+
+[tasks."dev:landing"]
+description = "Run the landing on localhost:$LANDING_PORT"
+run = "pnpm --filter @appy/landing dev"
+
+[tasks.urls]
+description = "Print the public URL of every app (from .env)"
+run = "env | grep -E '^PUBLIC_[A-Z_]+_URL=' | sort"
+
+[tasks."dev:cli"]
+description = "Run the CLI (pass args after --)"
+run = "cargo run -p appy-cli --"
+
+# ---------------------------------------------------------------- database
+
+[tasks."db:migrate"]
+description = "Apply API database migrations"
+dir = "apps/api"
+run = "uv run alembic upgrade head"
+
+[tasks."db:revision"]
+description = "Autogenerate a migration: mise run db:revision -- -m 'message'"
+dir = "apps/api"
+run = "uv run alembic revision --autogenerate"
+
+# ---------------------------------------------------------------- codegen
+
+[tasks."api:openapi"]
+description = "Export the API OpenAPI schema and regenerate the TS client"
+run = [
+  "uv run --package appy-api python -m appy_api.openapi packages/api-client/openapi.json",
+  "pnpm --filter @appy/api-client generate",
+]
+
+# ---------------------------------------------------------------- quality
+
+[tasks."lint:py"]
+description = "Ruff + mypy"
+run = [
+  "uv run ruff format --check .",
+  "uv run ruff check .",
+  "uv run mypy"
+]
+
+[tasks."lint:js"]
+description = "ESLint + vue-tsc"
+run = [
+  "pnpm lint",
+  "pnpm typecheck"
+]
+
+[tasks."lint:rs"]
+description = "rustfmt + clippy"
+run = [
+  "cargo fmt --all --check",
+  "cargo clippy --workspace --all-targets --locked -- -D warnings"
+]
+
+[tasks.lint]
+description = "All linters"
+depends = [
+  "lint:py",
+  "lint:js",
+  "lint:rs"
+]
+
+[tasks."test:py"]
+description = "API tests (integration tests need `mise run infra:up`)"
+run = "uv run pytest"
+
+[tasks."test:js"]
+description = "Vitest unit tests"
+run = "pnpm test"
+
+[tasks."test:rs"]
+description = "Cargo tests"
+run = "cargo test --workspace --locked"
+
+[tasks.test]
+description = "All tests"
+depends = [
+  "test:py",
+  "test:js",
+  "test:rs"
+]
+
+[tasks.fix]
+description = "Auto-fix formatting and lint issues"
+run = [
+  "uv run ruff format .",
+  "uv run ruff check --fix .",
+  "pnpm lint:fix",
+  "cargo fmt --all"
+]
+
+[tasks.build]
+description = "Build every app locally"
+run = [
+  "pnpm build",
+  "cargo build --workspace --release --locked"
+]
