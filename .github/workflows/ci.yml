@@ -16,6 +16,7 @@ jobs:
   python:
     name: Python (ruff, mypy, pytest)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: pgvector/pgvector:pg18
@@ -72,6 +73,7 @@ jobs:
   frontend:
     name: Frontend (eslint, vue-tsc, vitest, build, e2e)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v5
@@ -96,6 +98,7 @@ jobs:
   rust:
     name: Rust (rustfmt, clippy, test)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v5

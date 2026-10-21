@@ -91,7 +91,7 @@ Rust 2024. clap derive drives the commands and ratatui the TUI (`appy tui`). The
 
 ## Delivery
 
-- **Images:** built only by `.github/workflows/images.yml`, never locally for publishing. Pushes to `master` produce `:latest` (plus `:sha-…`), a tag `x.y.z` produces `:x.y.z` and `:x.y`, and pull requests build without pushing. Dockerfiles live in `apps/<app>/Dockerfile` and use the repo-root context.
+- **Images:** `linux/amd64` only (arm64 is needed just for the CLI binaries). They are built only by `.github/workflows/images.yml`, never locally for publishing. Pushes to `master` produce `:latest` (plus `:sha-…`), a tag `x.y.z` produces `:x.y.z` and `:x.y`, and pull requests build without pushing. Dockerfiles live in `apps/<app>/Dockerfile` and use the repo-root context.
 - **CLI binaries:** a tag `x.y.z` triggers `.github/workflows/cli-release.yml`, which builds macOS (arm64, x64) and Linux musl (x64, arm64) tarballs and attaches them to a GitHub Release.
 - **CI:** `.github/workflows/ci.yml` runs the Python checks with real services, the frontend lint, typecheck, test, build and e2e, and the Rust fmt, clippy and test.
 - **Git hooks** (lefthook): `pre-commit` formats and lints staged files and refuses `.env*`. `commit-msg` enforces the message format. `pre-push` runs the full checks sequentially.

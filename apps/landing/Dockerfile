@@ -2,7 +2,10 @@
 # Build context: repository root.
 # Runtime env: PUBLIC_LANDING_URL, PUBLIC_WEB_URL, PUBLIC_API_URL (see .env.example).
 
-FROM node:24-alpine AS build
+# The build output is static and architecture-independent: build on the host's
+# native platform, never under emulation (e.g. `--platform linux/amd64` on an
+# Apple Silicon Mac). Only the final Caddy stage is per-platform.
+FROM --platform=$BUILDPLATFORM node:24-alpine AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
 RUN corepack enable
 WORKDIR /repo
