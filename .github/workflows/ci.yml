@@ -15,7 +15,10 @@ permissions:
 jobs:
   python:
     name: Python (ruff, mypy, pytest)
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to Ubuntu 26 (kernel 6.19+), where MongoDB 8
+    # refuses to start (SERVER-121912, fixed only by kernel 7.0.14+). Move back
+    # to ubuntu-latest once its kernel is >= 7.0.14.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
       postgres:
